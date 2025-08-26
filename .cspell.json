@@ -1,0 +1,31 @@
+{
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/vscode-extension/**",
+    "**/.git/**",
+    "**/.pnpm-lock.json",
+    ".vscode",
+    "megalinter",
+    "package-lock.json",
+    "report"
+  ],
+  "language": "en",
+  "noConfigSearch": true,
+  "words": [
+    "blurhash",
+    "dotenv",
+    "healthcheck",
+    "localstack",
+    "megalinter",
+    "multiparts",
+    "oxsecurity",
+    "PRESIGN",
+    "presigner",
+    "tscpaths",
+    "typedi",
+    "typeorm",
+    "uuidv",
+    "webelight"
+  ],
+  "version": "0.2"
+}

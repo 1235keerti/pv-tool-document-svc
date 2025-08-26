@@ -1,0 +1,29 @@
+services:
+  app:
+    build: .
+    container_name: "${DOCKER_CONTAINER_NAME}"
+    image: "${DOCKER_COMPOSE_IMAGE_NAME}"
+    ports:
+      - "127.0.0.1:${DOCKER_PORT}:${APP_PORT}"
+    env_file:
+      - .env
+    logging:
+      driver: "awslogs"
+      options:
+        awslogs-region: ${AWS_REGION}
+        awslogs-group: ${AWS_LOGS_GROUP}
+        awslogs-create-group: "true"
+        tag: "{{.Name}}"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "node", "dist/src/healthcheck.js"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    command: ["node", "dist/src/index.js"]
+
+networks:
+  backend:
+    name: "${DOCKER_CONTAINER_NAME}"
+    driver: "bridge"

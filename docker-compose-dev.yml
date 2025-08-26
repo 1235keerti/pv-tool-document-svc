@@ -1,0 +1,33 @@
+services:
+  app:
+    container_name: "${NAME}"
+    image: "${DOCKER_COMPOSE_IMAGE_NAME}"
+    ports:
+      - "127.0.0.1:${DOCKER_PORT}:4000"
+    environment:
+      - INFISICAL_API_URL=${INFISICAL_API_URL}
+      - INFISICAL_TOKEN=${INFISICAL_TOKEN}
+      - INFISICAL_ENV=${INFISICAL_ENV}
+      - PROJECT_ID=${PROJECT_ID}
+    logging:
+      driver: "awslogs"
+      options:
+        awslogs-region: us-east-1
+        awslogs-group: document-microservice-dev
+        awslogs-create-group: "true"
+        tag: "{{.Name}}"
+    networks:
+      - backend
+    restart: always
+    healthcheck:
+      test: ["CMD", "node", "dist/src/healthcheck.js"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    command: ["infisical","run","--projectId=${PROJECT_ID}", "--", "node", "dist/src/index.js"]
+
+networks:
+  backend:
+    name: "document-microservice-dev"
+    driver: "bridge"
+

@@ -1,0 +1,19 @@
+# Dependencies
+node_modules
+
+# Serverless
+.serverless
+
+# Webpack
+.webpack
+
+# Output
+dist
+
+.eslintrc.js
+
+# This only used for build
+blurhash-event-rule-generator.js
+
+# This only used for build
+serverless.ts

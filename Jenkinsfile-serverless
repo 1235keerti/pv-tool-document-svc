@@ -1,0 +1,103 @@
+pipeline{
+
+    agent {label 'docker-agent'}
+    tools {nodejs "node21.7.3"}
+    environment {
+        S3_FOLDER = "${params.S3_FOLDER}"
+        SLACK_SEND_CHANNEL = "jenkins"
+        GITREPO_PATH = "webelight/microservices/document-microservice"
+        BUILD_NUMBER = "$BUILD_NUMBER"
+    }
+
+    parameters {
+        gitParameter branchFilter: 'origin/(.*)', defaultValue: 'main', name: 'BRANCH', type: 'PT_BRANCH'
+    }
+
+    options {
+        ansiColor('xterm')
+        withCredentials([
+            string(credentialsId: 'GITLAB_URL', variable: 'GITLAB_URL'),
+            string(credentialsId: 'SHARED_LIBRARY_PATH', variable: 'SHARED_LIBRARY_PATH')
+        ])
+    }
+
+    stages{
+
+        stage('prepration'){
+            steps{
+                script{
+                    try{
+
+                        library identifier: 'jsl@main', retriever: modernSCM(
+                        [$class: 'GitSCMSource', remote: "$GITLAB_URL"+"$SHARED_LIBRARY_PATH", credentialsId: 'gitlab-ssh'])
+
+                        echo "flag: ${params.BRANCH}"
+                        echo "flag: ${params.PIPELINE_NAME}"
+                        echo "flag: ${params.ENVIRONMENT}"
+                        echo "flag: ${params.AWS_PROFILE}"
+                        echo "flag: ${params.S3_FOLDER}"
+                        echo "flag: ${params.REGION}"
+                    }
+                    catch(Exception e){
+
+                    }
+                }
+            }
+        }
+
+        stage('Cloning the Project'){
+            steps{
+                script{
+                    try{
+                        properties([
+                            parameters([
+                                gitParameter ( branchFilter: 'origin/(.*)', defaultValue: 'main', name: 'BRANCH', type: 'PT_BRANCH',  useRepository: "${GITLAB_URL}"+"/"+"${env.GITREPO_PATH}"+".git" ),
+                                choice (name: 'ENVIRONMENT', choices: ['dev']),
+                                choice (name: 'PIPELINE_NAME', choices: ['webelight','budget-control','zora','riddhi-gsp']),
+                                choice (name: 'AWS_PROFILE', choices: ['jenkins-env']),
+                                choice (name: 'S3_FOLDER', choices: ['jenkins-env-files']),
+                                choice (name: 'REGION', choices: ['us-east-1','ap-south-1'])
+                                ])
+                        ])
+                       
+                        def cause = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
+                        sendSlackMessage("warning","Cloning the Project stage started - ${env.PIPELINE_NAME}-document-serverless STARTED-Branch-: '${env.JOB_NAME} ${cause.userName} [${env.BUILD_NUMBER}]'","${env.SLACK_SEND_CHANNEL}")
+           
+                        echo "flag: ${params.BRANCH}"
+                        echo "flag: ${params.ENVIRONMENT}"
+                        git branch: "${params.BRANCH}", credentialsId: 'gitlab-ssh', url: "${GITLAB_URL}"+"/"+"${env.GITREPO_PATH}"+".git"
+                        githash = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim() 
+                    
+                    }
+                    catch(Exception e)
+                    {
+                        echo "FAILED ${e}"
+                        sendSlackMessage("danger","Failed at Cloning the Project stage - ${env.PIPELINE_NAME}-document-serverless: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'" ,"${env.SLACK_SEND_CHANNEL}")  
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
+            }
+        }
+        stage('Deploying an Application') {
+            steps {
+                script {
+                    def cause = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
+                    try {
+                        sendSlackMessage("warning","Building stage started - ${env.PIPELINE_NAME}-document-serverless STARTED-Branch-: '${env.JOB_NAME} ${cause.userName} [${env.BUILD_NUMBER}]'","${env.SLACK_SEND_CHANNEL}")
+
+                        download_file_from_s3(".env","${env.AWS_PROFILE}","${env.S3_FOLDER}",true)
+                        
+                        serverless("${env.AWS_PROFILE}","${params.ENVIRONMENT}","${params.REGION}")
+                        sendSlackMessage ("good","SUCCESSFUL-deployed at ${env.PIPELINE_NAME}-document-serverless-${params.ENVIRONMENT}","${env.SLACK_SEND_CHANNEL}")                    
+                    } catch(Exception e) {
+                        echo "FAILED ${e}"
+                        sendSlackMessage("danger","Failed Deploying an Application stage - ${env.PIPELINE_NAME}-document-serverless: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'" ,"${env.SLACK_SEND_CHANNEL}")
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
+            }
+        }
+    }
+}

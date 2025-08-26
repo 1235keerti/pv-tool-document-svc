@@ -1,0 +1,14 @@
+# node_modules directory 
+node_modules
+
+# build output
+dist
+
+# webpack
+.webpack
+
+# sharp zip
+sharp-x64.zip
+
+#serverless
+.serverless

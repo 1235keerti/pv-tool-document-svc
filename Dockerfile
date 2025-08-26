@@ -1,0 +1,36 @@
+#First Stage : install dependency 
+FROM node:20-alpine AS dependencies
+
+RUN mkdir -p /home/node/app
+WORKDIR /home/node/app
+
+#COPY --chown=node . .
+COPY package.json yarn.lock ./
+
+RUN yarn install --frozen-lockfile \
+    && yarn add sharp --ignore-engines 
+
+RUN yarn install --frozen-lockfile --production --modules-folder node_module_prod && yarn add sharp --ignore-engines --production --modules-folder node_module_prod
+
+
+#Second Stage : build code
+FROM node:20-alpine AS builder
+WORKDIR /home/node/app
+
+COPY --from=dependencies /home/node/app/node_modules ./node_modules
+COPY --from=dependencies /home/node/app/package.json ./package.json
+
+COPY . .
+RUN yarn run build
+
+
+
+
+#Third Stage : create image
+FROM node:20-alpine
+USER node
+WORKDIR /home/node/app
+COPY --from=dependencies --chown=node /home/node/app/node_module_prod ./node_modules
+COPY --from=dependencies --chown=node /home/node/app/package.json .
+COPY --from=builder --chown=node /home/node/app/dist ./dist
+COPY --from=builder --chown=node /home/node/app/.env .

@@ -1,0 +1,9 @@
+/**
+ * For serverless.yml we use 'esnext' as a module and in express we use 'commonjs' as serverless does not support common.js we must use esnext
+ */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext"
+  }
+}

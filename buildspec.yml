@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22.17.0
+    commands:
+      - echo "Installing required dependencies"
+      - npm install -g serverless yarn
+  pre_build:
+    commands:
+      - echo "Setting up environment variables"
+      - aws s3 cp s3://${S3_BUCKET}/${BUCKET_PATH}/.env .
+      - ls -al
+      - cat .env
+  build:
+    commands:
+      - echo "Installing project dependencies"
+      - yarn cache clean
+      - yarn install
+      - echo "Deploying Serverless Application"
+      - sls deploy --stage ${STAGE} --region ${REGION}
+artifacts:
+  files:
+    - '**/*'
