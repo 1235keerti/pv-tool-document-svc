@@ -132,7 +132,7 @@ const serverlessConfiguration: AWS = {
       DocumentOptRole: {
         Type: "AWS::IAM::Role",
         Properties: {
-          RoleName: "${self:service}-S3-AND-LOGS-${self:provider.stage}",
+          RoleName: "${self:service}-S3-AND-LOGS1-${self:provider.stage}",
           AssumeRolePolicyDocument: {
             Version: "2012-10-17",
             Statement: [
@@ -148,7 +148,7 @@ const serverlessConfiguration: AWS = {
           Policies: [
             {
               PolicyName:
-                "${self:service}-s3-and-log-access-${self:provider.stage}",
+                "${self:service}-s3-and-log-access1-${self:provider.stage}",
               PolicyDocument: {
                 Version: "2012-10-17",
                 Statement: [
@@ -172,7 +172,7 @@ const serverlessConfiguration: AWS = {
                     Effect: "Allow",
                     Action: ["lambda:InvokeFunction"],
                     Resource: [
-                      "arn:aws:lambda:${opt:region}:${aws:accountId}:function:${self:service}-${self:provider.stage}-processZip",
+                      "arn:aws:lambda:${opt:region}:${aws:accountId}:function:${self:service}-${self:provider.stage}-processZip1",
                     ],
                     // Note: change this opt:region to aws:region for localstack
                   },
